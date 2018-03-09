@@ -12,6 +12,7 @@ from forms import LoginForm
 from models import UserProfile
 
 
+
 ###
 # Routing for your application.
 ###
@@ -30,26 +31,66 @@ def about():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('securepage'))
+    
     form = LoginForm()
-    if request.method == "POST":
+    if request.method == "POST" and form.validate_on_submit():
         # change this to actually validate the entire form submission
         # and not just one field
-        if form.username.data:
+        
+           
             # Get the username and password values from the form.
+            password=form.password.data
+            username=form.username.data
+           
 
             # using your model, query database for a user based on the username
             # and password submitted
+            
+            user=UserProfile.query.filter_by(username=username,password=password).first()
+            
+                
+            if user is not None:
+                login_user(user)
+                
+                flash("You have logged in successfully.",'success')
+                
+                return redirect(url_for("securepage"))
+            else:
+                flash("I'm sorry but login failed!",danger)
+                
+    return render_template("login.html",form=form)
+                
+          
+                
+            
+            
             # store the result of that query to a `user` variable so it can be
             # passed to the login_user() method.
 
             # get user id, load into session
-            login_user(user)
+            
 
-            # remember to flash a message to the user
-            return redirect(url_for("home"))  # they should be redirected to a secure-page route instead
-    return render_template("login.html", form=form)
+                 # remember to flash a message to the user
+                
+            
+            # they should be redirected to a secure-page route instead
+       
 
+@app.route('/securepage')
+@login_required
+def securepage():
+    return render_template('securepage.html')
+    
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logging out...','danger')
+    return redirect(url_for('home'))
+    
 # user_loader callback. This callback is used to reload the user object from
 # the user ID stored in the session
 @login_manager.user_loader
